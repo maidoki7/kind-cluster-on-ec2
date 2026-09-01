@@ -1,0 +1,79 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: store-app-pod
+  labels:
+    app: store
+spec:
+  containers:
+  - command:
+    - /agnhost
+    - netexec
+    - --http-port
+    - "8080"
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    name: store-app
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: store-service
+spec:
+  selector:
+    app: store
+  ports:
+  # Default port used by the image
+  - port: 8080
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: webmail-app-pod
+  labels:
+    app: webmail
+spec:
+  containers:
+  - command:
+    - /agnhost
+    - netexec
+    - --http-port
+    - "8080"
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    name: webmail-app
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: webmail-service
+spec:
+  selector:
+    app: webmail
+  ports:
+  # Default port used by the image
+  - port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: ImplementationSpecific
+        path: /store(/|$)(.*)
+        backend:
+          service:
+            name: store-service
+            port:
+              number: 8080
+      - pathType: ImplementationSpecific
+        path: /webmail(/|$)(.*)
+        backend:
+          service:
+            name: webmail-service
+            port:
+              number: 8080
